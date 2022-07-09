@@ -1,39 +1,44 @@
 mod gurafu;
 
-use gurafu::datatype;
+use gurafu::datatype::DataType;
+use gurafu::mutation::MutationBuilder;
 use gurafu::schema::SchemaBuilder;
-use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
-use uuid::Uuid;
+use gurafu::session::Session;
 
 fn main() -> std::io::Result<()> {
     let mut schema_builder = SchemaBuilder::new();
 
-    schema_builder.create_graph("my_test_db").create();
+    schema_builder.create_graph("my_test_db").create()?;
 
     schema_builder.use_graph("my_test_db");
 
     schema_builder
         .create_vertex("user")
-        .property("username", datatype::TEXT)
-        .property("password", datatype::TEXT)
-        .property("lastLoggedIn", datatype::TIMESTAMP)
-        .property("createdAt", datatype::TIMESTAMP)
-        .create();
+        .property("username", DataType::Text)
+        .property("password", DataType::Text)
+        .property("last_logged_in", DataType::Timestamp)
+        .property("created_at", DataType::Timestamp)
+        .create()?;
 
-    // Insert a user
-    let id = Uuid::new_v4().simple().to_string();
+    let mut session = Session::new();
 
-    let first_two_chars = &id[..2];
-    let path_to_user = format!("gurafu/my_test_db/vertices/user/{}", first_two_chars);
+    session.connect();
 
-    fs::create_dir_all(&path_to_user)?;
+    session.use_graph("my_test_db");
 
-    let rest_of_id = &id[2..];
+    let mut mutation_builder = MutationBuilder::new();
 
-    let mut user_file = File::create(format!("{}/{}", path_to_user, rest_of_id))?;
-    user_file.write_all(b"Shinigami\n$2a$13$mhQRlZqBqPUbkThjgBp1r.ftgpzG54ra4mTCS0acigwwk1xwUMH1q\n\n2022-07-09T08:47:45.409Z")?;
+    let mutation = mutation_builder
+        .insert_vertex("user")
+        .property("username", "Shinigami")
+        .property(
+            "password",
+            "$2a$13$mhQRlZqBqPUbkThjgBp1r.ftgpzG54ra4mTCS0acigwwk1xwUMH1q",
+        )
+        .property("created_at", "2022-07-09T08:47:45.409Z")
+        .build();
+
+    session.execute_mutation(&mutation)?;
 
     Ok(())
 }

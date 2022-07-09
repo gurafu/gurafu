@@ -1,10 +1,14 @@
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::{self, prelude::*};
+use std::path::Path;
+use std::str::FromStr;
+
+use super::datatype::DataType;
 
 pub struct PropertyDefinition {
     name: String,
-    datatype: &'static str,
+    datatype: DataType,
 }
 
 pub struct Schema {
@@ -55,7 +59,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub fn property(&mut self, name: &str, datatype: &'static str) -> &mut SchemaBuilder {
+    pub fn property(&mut self, name: &str, datatype: DataType) -> &mut SchemaBuilder {
         self.schema.property_definitions.push(PropertyDefinition {
             name: name.to_string(),
             datatype,
@@ -63,7 +67,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub fn create(&mut self) -> () {
+    pub fn create(&mut self) -> io::Result<()> {
         match self.state {
             SchemaBuilderState::CreateGraph => {
                 println!("creating graph {}", self.schema.name);
@@ -84,7 +88,7 @@ impl SchemaBuilder {
                         "gurafu/{}/{}/{}",
                         self.schema.graph_name, "vertices", self.schema.name
                     );
-                    let _result = fs::create_dir_all(&path_to_vertex);
+                    fs::create_dir_all(&path_to_vertex)?;
 
                     let mut definition_file =
                         File::create(format!("{}/{}", path_to_vertex, "definition")).unwrap();
@@ -110,6 +114,53 @@ impl SchemaBuilder {
                 println!("illegal state {:?}", self.state);
             }
         }
-        ()
+        Ok(())
     }
+}
+
+pub struct VertexPropertyDefinition {
+    pub name: String,
+    pub datatype: DataType,
+}
+
+pub struct VertexDefinition {
+    pub name: String,
+    pub property_definitions: Vec<VertexPropertyDefinition>,
+}
+
+pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result<VertexDefinition> {
+    let path_to_vertex_definition_file =
+        format!("gurafu/{}/vertices/{}/definition", graph_name, vertex_name);
+
+    let mut property_definitions: Vec<VertexPropertyDefinition> = Vec::new();
+
+    if let Ok(lines) = read_lines(path_to_vertex_definition_file) {
+        for line in lines {
+            if let Ok(line) = line {
+                let parts: Vec<String> = line.split(",").map(String::from).collect();
+                if parts.len() != 2 {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "invalid vertex definition",
+                    ));
+                }
+                let name: String = parts[0].clone();
+                let datatype: DataType = DataType::from_str(parts[1].as_str()).unwrap();
+                property_definitions.push(VertexPropertyDefinition { name, datatype });
+            }
+        }
+    }
+
+    Ok(VertexDefinition {
+        name: vertex_name.to_string(),
+        property_definitions,
+    })
+}
+
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
 }

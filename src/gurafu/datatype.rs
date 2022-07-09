@@ -1,2 +1,7 @@
-pub const TEXT: &'static str = "Text";
-pub const TIMESTAMP: &'static str = "Timestamp";
+use strum_macros::{Display, EnumString};
+
+#[derive(Display, EnumString)]
+pub enum DataType {
+    Text,
+    Timestamp,
+}

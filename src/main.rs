@@ -1,34 +1,32 @@
 mod gurafu;
 
+use gurafu::datatype;
 use gurafu::schema::SchemaBuilder;
-use gurafu::types;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use uuid::Uuid;
 
 fn main() -> std::io::Result<()> {
-    let database_name = "my_test_db";
+    let mut schema_builder = SchemaBuilder::new();
 
-    let path_to_db = format!("{}/{}", "gurafu", database_name);
+    schema_builder.create_graph("my_test_db").create();
 
-    // Create database
-    fs::create_dir_all(&path_to_db)?;
+    schema_builder.use_graph("my_test_db");
 
-    // Create "user" vertex definition
-    let path_to_user_vertex = format!("{}/{}/{}", path_to_db, "vertices", "user");
-    fs::create_dir_all(&path_to_user_vertex)?;
-
-    let mut user_definition_file =
-        File::create(format!("{}/{}", path_to_user_vertex, "definition"))?;
-    user_definition_file
-        .write_all(b"username,Text\npassword,Text\nlastLoggedIn,Timestamp\ncreatedAt,Timestamp")?;
+    schema_builder
+        .create_vertex("user")
+        .property("username", datatype::TEXT)
+        .property("password", datatype::TEXT)
+        .property("lastLoggedIn", datatype::TIMESTAMP)
+        .property("createdAt", datatype::TIMESTAMP)
+        .create();
 
     // Insert a user
     let id = Uuid::new_v4().simple().to_string();
 
     let first_two_chars = &id[..2];
-    let path_to_user = format!("{}/{}", path_to_user_vertex, first_two_chars);
+    let path_to_user = format!("gurafu/my_test_db/vertices/user/{}", first_two_chars);
 
     fs::create_dir_all(&path_to_user)?;
 
@@ -36,15 +34,6 @@ fn main() -> std::io::Result<()> {
 
     let mut user_file = File::create(format!("{}/{}", path_to_user, rest_of_id))?;
     user_file.write_all(b"Shinigami\n$2a$13$mhQRlZqBqPUbkThjgBp1r.ftgpzG54ra4mTCS0acigwwk1xwUMH1q\n\n2022-07-09T08:47:45.409Z")?;
-
-    // For later
-    SchemaBuilder::new()
-        .create_vertex("user")
-        .property("username", types::TEXT)
-        .property("password", types::TEXT)
-        .property("lastLoggedIn", types::TIMESTAMP)
-        .property("createdAt", types::TIMESTAMP)
-        .create();
 
     Ok(())
 }

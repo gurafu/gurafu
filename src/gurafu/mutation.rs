@@ -52,7 +52,6 @@ impl MutationBuilder {
 
     pub fn build(&self) -> Mutation {
         // TODO @Shinigami92 2022-07-09: validate mutation steps
-        let mutation = Mutation::new(&self.steps);
-        mutation
+        Mutation::new(&self.steps)
     }
 }

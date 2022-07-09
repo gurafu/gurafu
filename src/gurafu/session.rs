@@ -38,7 +38,7 @@ impl Session {
                 let vertex_name = initial_mutation_step.args.get("vertex_name").unwrap();
 
                 let vertex_definition: VertexDefinition =
-                    load_vertex_definition(&self.graph_name, &vertex_name)?;
+                    load_vertex_definition(&self.graph_name, vertex_name)?;
 
                 println!("Inserting vertex {}", vertex_name);
 
@@ -89,7 +89,7 @@ impl Session {
                                     property_name == &&property_definition.name
                                 })
                                 .map(|(_, property_value)| property_value.to_string())
-                                .unwrap_or("".to_string());
+                                .unwrap_or_else(|| "".to_string());
                             property_value
                         })
                         .collect::<Vec<String>>()

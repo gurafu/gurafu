@@ -135,19 +135,17 @@ pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result
     let mut property_definitions: Vec<VertexPropertyDefinition> = Vec::new();
 
     if let Ok(lines) = read_lines(path_to_vertex_definition_file) {
-        for line in lines {
-            if let Ok(line) = line {
-                let parts: Vec<String> = line.split(",").map(String::from).collect();
-                if parts.len() != 2 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "invalid vertex definition",
-                    ));
-                }
-                let name: String = parts[0].clone();
-                let datatype: DataType = DataType::from_str(parts[1].as_str()).unwrap();
-                property_definitions.push(VertexPropertyDefinition { name, datatype });
+        for line in lines.flatten() {
+            let parts: Vec<String> = line.split(',').map(String::from).collect();
+            if parts.len() != 2 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "invalid vertex definition",
+                ));
             }
+            let name: String = parts[0].clone();
+            let datatype: DataType = DataType::from_str(parts[1].as_str()).unwrap();
+            property_definitions.push(VertexPropertyDefinition { name, datatype });
         }
     }
 

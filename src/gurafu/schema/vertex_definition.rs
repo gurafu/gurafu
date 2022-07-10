@@ -15,8 +15,11 @@ pub struct VertexDefinition {
 }
 
 pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result<VertexDefinition> {
-    let path_to_vertex_definition_file =
-        format!("gurafu/{}/vertices/{}/definition", graph_name, vertex_name);
+    let path_to_vertex_definition_file = Path::new("gurafu")
+        .join(graph_name)
+        .join("vertices")
+        .join(vertex_name)
+        .join("definition");
 
     let mut property_definitions: Vec<VertexPropertyDefinition> = Vec::new();
 

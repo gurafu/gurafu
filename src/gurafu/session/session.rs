@@ -29,8 +29,8 @@ impl Session {
     pub fn use_graph(&mut self, name: &str) -> io::Result<()> {
         println!("Using graph {}", name);
 
-        let path = format!("gurafu/{}", name);
-        if !Path::new(&path).exists() {
+        let path = Path::new("gurafu").join(name);
+        if !path.exists() {
             return Err(Error::new(
                 ErrorKind::NotFound,
                 format!("Graph {} does not exist.", name),
@@ -54,7 +54,7 @@ impl Session {
                 println!("Creating graph {}", graph_name);
 
                 {
-                    let path_to_db = format!("gurafu/{}", graph_name);
+                    let path_to_db = Path::new("gurafu").join(graph_name);
                     fs::create_dir_all(&path_to_db).unwrap();
                 }
 
@@ -68,16 +68,16 @@ impl Session {
 
                 {
                     // Create vertex directory
-                    let path_to_vertex =
-                        format!("gurafu/{}/vertices/{}", self.graph_name, vertex_name);
+                    let path_to_vertex = Path::new("gurafu")
+                        .join(&self.graph_name)
+                        .join("vertices")
+                        .join(vertex_name);
 
                     fs::create_dir_all(&path_to_vertex).unwrap();
 
                     // Create vertex definition file
-                    let path_to_definition_file = format!(
-                        "gurafu/{}/vertices/{}/definition",
-                        self.graph_name, vertex_name
-                    );
+                    let path_to_definition_file = path_to_vertex.join("definition");
+
                     let options = match statement.steps[1..]
                         .iter()
                         .any(|step| step.action == SchemaAction::AllowRedefine)
@@ -141,12 +141,13 @@ impl Session {
                     let id_simple = id.simple().to_string();
 
                     let first_two_chars = id_simple[..2].to_string();
-                    let path_to_user = format!(
-                        "gurafu/{}/vertices/{}/{}",
-                        self.graph_name, vertex_name, first_two_chars
-                    );
+                    let path_to_vertex = Path::new("gurafu")
+                        .join(&self.graph_name)
+                        .join("vertices")
+                        .join(vertex_name)
+                        .join(first_two_chars);
 
-                    match fs::create_dir_all(&path_to_user) {
+                    match fs::create_dir_all(&path_to_vertex) {
                         Ok(it) => it,
                         Err(err) => return Err(err),
                     };
@@ -160,7 +161,7 @@ impl Session {
                         .create_new(true)
                         .write(true)
                         .append(true)
-                        .open(format!("{}/{}", path_to_user, rest_of_id))
+                        .open(path_to_vertex.join(rest_of_id))
                         .unwrap();
 
                     let set_vertex_properties: Vec<(&String, &String)> = mutation.steps[1..]

@@ -1,6 +1,8 @@
 use std::{
+    collections::HashMap,
+    fmt::Write as FmtWrite,
     fs::{self, File, OpenOptions},
-    io::{self, Error, ErrorKind, Write},
+    io::{self, Error, ErrorKind, Write as IoWrite},
     path::PathBuf,
 };
 
@@ -164,33 +166,28 @@ impl Session {
                         .open(path_to_vertex.join(rest_of_id))
                         .unwrap();
 
-                    let set_vertex_properties: Vec<(&String, &String)> = mutation.steps[1..]
+                    let mut set_vertex_properties: HashMap<String, String> = HashMap::new();
+                    mutation.steps[1..]
                         .iter()
                         .filter(|step| step.action == MutationAction::SetVertexProperty)
-                        .map(|step| {
-                            (
-                                step.args.get("property_name").unwrap(),
-                                step.args.get("property_value").unwrap(),
-                            )
-                        })
-                        .collect();
+                        .for_each(|step| {
+                            set_vertex_properties.insert(
+                                step.args.get("property_name").unwrap().to_string(),
+                                step.args.get("property_value").unwrap().to_string(),
+                            );
+                        });
 
-                    let content: String = vertex_definition
-                        .property_definitions
-                        .iter()
-                        .map(|property_definition| {
-                            let property_value: String = set_vertex_properties
-                                .iter()
-                                .find(|(property_name, _)| {
-                                    // TODO @Shinigami92 2022-07-09: check the property datatype
-                                    property_name == &&property_definition.name
-                                })
-                                .map(|(_, property_value)| property_value.to_string())
-                                .unwrap_or_else(|| "".to_string());
-                            property_value
-                        })
-                        .collect::<Vec<String>>()
-                        .join("\n");
+                    let mut content = String::new();
+                    for property_definition in &vertex_definition.property_definitions {
+                        if let Some(property_value) =
+                            set_vertex_properties.get(&property_definition.name)
+                        {
+                            // TODO @Shinigami92 2022-07-09: check the property datatype
+                            write!(content, "{property_value}").unwrap();
+                        }
+                        content.push('\n');
+                    }
+                    content.pop();
 
                     let _ = write!(vertex_file, "{}", content);
 

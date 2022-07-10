@@ -1,22 +1,6 @@
 use std::collections::HashMap;
 
-use uuid::Uuid;
-
-#[derive(Clone, PartialEq)]
-pub enum MutationAction {
-    InsertVertex,
-    SetVertexProperty,
-}
-
-#[derive(Clone)]
-pub struct MutationStep {
-    pub action: MutationAction,
-    pub args: HashMap<String, String>,
-}
-
-pub struct MutationStatement {
-    pub steps: Vec<MutationStep>,
-}
+use super::{MutationAction, MutationStatement, MutationStep};
 
 pub struct MutationBuilder {
     steps: Vec<MutationStep>,
@@ -54,10 +38,4 @@ impl MutationBuilder {
         self.steps.clear();
         statement
     }
-}
-
-pub struct MutationResult {
-    pub vertex_name: String,
-    pub vertex_id: Uuid,
-    pub properties: HashMap<String, String>,
 }

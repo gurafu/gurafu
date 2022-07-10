@@ -1,12 +1,15 @@
-use crate::gurafu::schema::{load_vertex_definition, SchemaAction, VertexDefinition};
+use std::{
+    fs::{self, File, OpenOptions},
+    io::{self, Error, ErrorKind, Write},
+    path::Path,
+};
 
-use super::mutation::{MutationAction, MutationResult, MutationStatement};
-use super::schema::SchemaStatement;
-
-use std::fs::{self, File, OpenOptions};
-use std::io::{self, prelude::*, Error, ErrorKind};
-use std::path::Path;
 use uuid::Uuid;
+
+use crate::gurafu::{
+    mutation::{MutationAction, MutationResult, MutationStatement},
+    schema::{load_vertex_definition, SchemaAction, SchemaStatement, VertexDefinition},
+};
 
 pub struct Session {
     pub graph_name: String,

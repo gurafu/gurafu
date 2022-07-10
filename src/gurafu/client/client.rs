@@ -1,4 +1,4 @@
-use super::session::Session;
+use crate::gurafu::session::Session;
 
 pub struct Client {
     pub host: String,

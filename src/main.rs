@@ -2,10 +2,10 @@ mod gurafu;
 
 use std::io;
 
-use gurafu::client::Client;
-use gurafu::datatype::DataType;
-use gurafu::mutation::MutationBuilder;
-use gurafu::schema::SchemaBuilder;
+use crate::gurafu::client::Client;
+use crate::gurafu::datatype::DataType;
+use crate::gurafu::mutation::MutationBuilder;
+use crate::gurafu::schema::SchemaBuilder;
 
 fn main() -> io::Result<()> {
     // Create a new client

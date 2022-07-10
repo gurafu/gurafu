@@ -1,11 +1,18 @@
 mod gurafu;
 
+use gurafu::client::Client;
 use gurafu::datatype::DataType;
 use gurafu::mutation::MutationBuilder;
 use gurafu::schema::SchemaBuilder;
-use gurafu::session::Session;
 
 fn main() -> std::io::Result<()> {
+    let client = Client {
+        host: String::from("localhost"),
+        port: 41765,
+        username: String::from("gurafu"),
+        password: String::from("gurafu"),
+    };
+
     let mut schema_builder = SchemaBuilder::new();
 
     schema_builder.create_graph("my_test_db").create()?;
@@ -20,7 +27,7 @@ fn main() -> std::io::Result<()> {
         .property("created_at", DataType::Timestamp)
         .create()?;
 
-    let mut session = Session::new();
+    let mut session = client.session();
 
     session.connect();
 

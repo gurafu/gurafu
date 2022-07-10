@@ -1,4 +1,4 @@
-use std::fs;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, prelude::*};
 use std::path::Path;
@@ -6,115 +6,66 @@ use std::str::FromStr;
 
 use super::datatype::DataType;
 
-pub struct PropertyDefinition {
-    name: String,
-    datatype: DataType,
-}
-
-pub struct Schema {
-    pub graph_name: String,
-    pub name: String,
-    pub property_definitions: Vec<PropertyDefinition>,
-}
-
-#[derive(Debug)]
-enum SchemaBuilderState {
-    Initial,
+#[derive(Clone, PartialEq)]
+pub enum SchemaAction {
     CreateGraph,
     CreateVertex,
+    CreateVertexProperty,
+}
+
+#[derive(Clone)]
+pub struct SchemaStep {
+    pub action: SchemaAction,
+    pub args: HashMap<String, String>,
+}
+
+pub struct SchemaStatement {
+    pub steps: Vec<SchemaStep>,
 }
 
 pub struct SchemaBuilder {
-    state: SchemaBuilderState,
-    schema: Schema,
+    steps: Vec<SchemaStep>,
 }
 
 impl SchemaBuilder {
     pub fn new() -> SchemaBuilder {
-        SchemaBuilder {
-            state: SchemaBuilderState::Initial,
-            schema: Schema {
-                graph_name: String::new(),
-                name: String::new(),
-                property_definitions: Vec::new(),
-            },
-        }
+        SchemaBuilder { steps: Vec::new() }
     }
 
     pub fn create_graph(&mut self, name: &str) -> &mut SchemaBuilder {
-        self.state = SchemaBuilderState::CreateGraph;
-        self.schema.graph_name = name.to_string();
-        self
-    }
-
-    pub fn use_graph(&mut self, name: &str) -> &mut SchemaBuilder {
-        self.state = SchemaBuilderState::Initial;
-        self.schema.graph_name = name.to_string();
-        self
-    }
-
-    pub fn create_vertex(&mut self, name: &str) -> &mut SchemaBuilder {
-        self.state = SchemaBuilderState::CreateVertex;
-        self.schema.name = name.to_string();
-        self
-    }
-
-    pub fn property(&mut self, name: &str, datatype: DataType) -> &mut SchemaBuilder {
-        self.schema.property_definitions.push(PropertyDefinition {
-            name: name.to_string(),
-            datatype,
+        self.steps.push(SchemaStep {
+            action: SchemaAction::CreateGraph,
+            args: HashMap::from([("graph_name".to_owned(), name.to_string())]),
         });
         self
     }
 
-    pub fn create(&mut self) -> io::Result<()> {
-        match self.state {
-            SchemaBuilderState::CreateGraph => {
-                println!("creating graph {}", self.schema.name);
+    pub fn create_vertex(&mut self, name: &str) -> &mut SchemaBuilder {
+        self.steps.push(SchemaStep {
+            action: SchemaAction::CreateVertex,
+            args: HashMap::from([("vertex_name".to_owned(), name.to_string())]),
+        });
+        self
+    }
 
-                {
-                    let path_to_db = format!("gurafu/{}", self.schema.graph_name);
-                    fs::create_dir_all(&path_to_db).unwrap();
-                }
+    pub fn property(&mut self, name: &str, datatype: DataType) -> &mut SchemaBuilder {
+        self.steps.push(SchemaStep {
+            action: SchemaAction::CreateVertexProperty,
+            args: HashMap::from([
+                ("property_name".to_owned(), name.to_string()),
+                ("property_datatype".to_owned(), datatype.to_string()),
+            ]),
+        });
+        self
+    }
 
-                self.schema.name = String::new();
-                self.schema.property_definitions.clear();
-            }
-            SchemaBuilderState::CreateVertex => {
-                println!("creating vertex {}", self.schema.name);
-
-                {
-                    let path_to_vertex = format!(
-                        "gurafu/{}/{}/{}",
-                        self.schema.graph_name, "vertices", self.schema.name
-                    );
-                    fs::create_dir_all(&path_to_vertex)?;
-
-                    let mut definition_file =
-                        File::create(format!("{}/{}", path_to_vertex, "definition")).unwrap();
-                    let definition = self
-                        .schema
-                        .property_definitions
-                        .iter()
-                        .fold(String::new(), |acc, property_definition| {
-                            format!(
-                                "{}{},{}\n",
-                                acc, property_definition.name, property_definition.datatype
-                            )
-                        })
-                        .trim_end()
-                        .to_owned();
-                    definition_file.write_all(definition.as_bytes()).unwrap();
-                }
-
-                self.schema.name = String::new();
-                self.schema.property_definitions.clear();
-            }
-            _ => {
-                println!("illegal state {:?}", self.state);
-            }
-        }
-        Ok(())
+    pub fn build(&mut self) -> SchemaStatement {
+        // TODO @Shinigami92 2022-07-09: validate schema steps
+        let statement = SchemaStatement {
+            steps: self.steps.clone(),
+        };
+        self.steps.clear();
+        statement
     }
 }
 
@@ -140,7 +91,7 @@ pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result
             if parts.len() != 2 {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "invalid vertex definition",
+                    "Invalid vertex definition",
                 ));
             }
             let name: String = parts[0].clone();

@@ -13,14 +13,14 @@ pub struct MutationStep {
     pub args: HashMap<String, String>,
 }
 
-pub struct Mutation<'a> {
+pub struct MutationStatement<'a> {
     pub steps: &'a [MutationStep],
 }
 
-impl Mutation<'_> {
-    pub fn new(steps: &[MutationStep]) -> Mutation {
+impl MutationStatement<'_> {
+    pub fn new(steps: &[MutationStep]) -> MutationStatement {
         // TODO @Shinigami92 2022-07-09: I assume that this is bad practice
-        Mutation { steps }
+        MutationStatement { steps }
     }
 }
 
@@ -52,9 +52,9 @@ impl MutationBuilder {
         self
     }
 
-    pub fn build(&self) -> Mutation {
+    pub fn build(&self) -> MutationStatement {
         // TODO @Shinigami92 2022-07-09: validate mutation steps
-        Mutation::new(&self.steps)
+        MutationStatement::new(&self.steps)
     }
 }
 

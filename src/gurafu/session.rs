@@ -1,6 +1,7 @@
-use crate::gurafu::schema::{load_vertex_definition, VertexDefinition};
+use crate::gurafu::schema::{load_vertex_definition, SchemaAction, VertexDefinition};
 
-use super::mutation::{Mutation, MutationAction, MutationResult};
+use super::mutation::{MutationAction, MutationResult, MutationStatement};
+use super::schema::SchemaStatement;
 
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
@@ -27,8 +28,76 @@ impl Session {
         self.graph_name = name.to_string();
     }
 
-    pub fn execute_mutation(&self, mutation: &Mutation) -> io::Result<MutationResult> {
-        println!("Executing mutation...");
+    pub fn execute_schema(&self, statement: &SchemaStatement) -> io::Result<()> {
+        println!("Executing schema statement...");
+
+        let initial_step = &statement.steps[0];
+
+        match initial_step.action {
+            SchemaAction::CreateGraph => {
+                let graph_name = initial_step.args.get("graph_name").unwrap();
+
+                println!("Creating graph {}", graph_name);
+
+                {
+                    let path_to_db = format!("gurafu/{}", graph_name);
+                    fs::create_dir_all(&path_to_db).unwrap();
+                }
+
+                println!("Graph {} created", graph_name);
+            }
+            SchemaAction::CreateVertex => {
+                let vertex_name = initial_step.args.get("vertex_name").unwrap();
+
+                println!("Creating vertex {}", vertex_name);
+
+                {
+                    // Create vertex directory
+                    let path_to_vertex =
+                        format!("gurafu/{}/vertices/{}", self.graph_name, vertex_name);
+
+                    fs::create_dir_all(&path_to_vertex)?;
+
+                    // Create vertex definition file
+                    let path_to_definition_file = format!(
+                        "gurafu/{}/vertices/{}/definition",
+                        self.graph_name, vertex_name
+                    );
+                    let mut definition_file = OpenOptions::new()
+                        // TODO @Shinigami92 2022-07-10: throw error if definition already exists
+                        // .create_new(true)
+                        .create(true)
+                        .write(true)
+                        .open(&path_to_definition_file)?;
+                    let definition = statement.steps[1..]
+                        .iter()
+                        .filter(|step| step.action == SchemaAction::CreateVertexProperty)
+                        .fold(String::new(), |acc, step| {
+                            format!(
+                                "{}{},{}\n",
+                                acc,
+                                step.args.get("property_name").unwrap(),
+                                step.args.get("property_datatype").unwrap()
+                            )
+                        })
+                        .trim_end()
+                        .to_owned();
+                    definition_file.write_all(definition.as_bytes())?;
+                }
+
+                println!("Vertex {} created", vertex_name);
+            }
+            _ => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Unsupported initial schema action",
+            ))?,
+        }
+
+        Ok(())
+    }
+
+    pub fn execute_mutation(&self, mutation: &MutationStatement) -> io::Result<MutationResult> {
+        println!("Executing mutation statement...");
         let initial_mutation_step = &mutation.steps[0];
 
         let mut vertex_file: File;

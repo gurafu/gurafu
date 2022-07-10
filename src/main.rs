@@ -27,10 +27,10 @@ fn main() -> io::Result<()> {
 
     let statement = schema_builder.create_graph("my_test_db").build();
 
-    session.execute_schema(&statement)?;
+    session.execute_schema(&statement).unwrap();
 
     // Use the newly created graph
-    session.use_graph("my_test_db")?;
+    session.use_graph("my_test_db").unwrap();
 
     // Create a new vertex named "user"
     let statement = schema_builder
@@ -42,7 +42,7 @@ fn main() -> io::Result<()> {
         .property("created_at", DataType::Timestamp)
         .build();
 
-    session.execute_schema(&statement)?;
+    session.execute_schema(&statement).unwrap();
 
     // Create a new "user" vertex with some properties
     let mut mutation_builder = MutationBuilder::new();
@@ -58,7 +58,7 @@ fn main() -> io::Result<()> {
         .property("created_at", "2022-07-09T08:47:45.409Z")
         .build();
 
-    let result = session.execute_mutation(&mutation)?;
+    let result = session.execute_mutation(&mutation).unwrap();
 
     println!("Generated id of vertex was {}", result.vertex_id);
 

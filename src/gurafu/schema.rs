@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, prelude::*};
+use std::io::{self, prelude::*, Error, ErrorKind};
 use std::path::Path;
 use std::str::FromStr;
 
@@ -98,8 +98,8 @@ pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result
         for line in lines.flatten() {
             let parts: Vec<String> = line.split(',').map(String::from).collect();
             if parts.len() != 2 {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
                     "Invalid vertex definition",
                 ));
             }
@@ -119,6 +119,6 @@ fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
     P: AsRef<Path>,
 {
-    let file = File::open(filename)?;
+    let file = File::open(filename).unwrap();
     Ok(io::BufReader::new(file).lines())
 }

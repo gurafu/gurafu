@@ -44,7 +44,7 @@ impl Session {
 
         let initial_step = &statement.steps[0];
 
-        match initial_step.action {
+        Ok(match initial_step.action {
             SchemaAction::CreateGraph => {
                 let graph_name = initial_step.args.get("graph_name").unwrap();
 
@@ -52,7 +52,7 @@ impl Session {
 
                 {
                     let path_to_db = format!("gurafu/{}", graph_name);
-                    fs::create_dir_all(&path_to_db)?;
+                    fs::create_dir_all(&path_to_db).unwrap();
                 }
 
                 println!("Graph {} created", graph_name);
@@ -67,7 +67,7 @@ impl Session {
                     let path_to_vertex =
                         format!("gurafu/{}/vertices/{}", self.graph_name, vertex_name);
 
-                    fs::create_dir_all(&path_to_vertex)?;
+                    fs::create_dir_all(&path_to_vertex).unwrap();
 
                     // Create vertex definition file
                     let path_to_definition_file = format!(
@@ -83,10 +83,12 @@ impl Session {
                     };
                     let mut definition_file = match options.open(&path_to_definition_file) {
                         Ok(file) => file,
-                        Err(_) => return Err(Error::new(
-                            ErrorKind::AlreadyExists,
-                           format!("Vertex for {} definition already exists. Did you miss calling allow_redefine()?", vertex_name),
-                        )),
+                        Err(_) => {
+                            return Err(Error::new(
+                                ErrorKind::AlreadyExists,
+                                format!("Vertex for {} definition already exists. Did you miss calling allow_redefine()?", vertex_name),
+                            ));
+                        }
                     };
                     let definition = statement.steps[1..]
                         .iter()
@@ -101,18 +103,18 @@ impl Session {
                         })
                         .trim_end()
                         .to_owned();
-                    definition_file.write_all(definition.as_bytes())?;
+                    definition_file.write_all(definition.as_bytes()).unwrap();
                 }
 
                 println!("Vertex {} created", vertex_name);
             }
-            _ => Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Unsupported initial schema action",
-            ))?,
-        }
-
-        Ok(())
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "Unsupported initial schema action",
+                ))
+            }
+        })
     }
 
     pub fn execute_mutation(&self, mutation: &MutationStatement) -> io::Result<MutationResult> {
@@ -120,12 +122,12 @@ impl Session {
         let initial_mutation_step = &mutation.steps[0];
 
         let mut vertex_file: File;
-        let result: io::Result<MutationResult> = match initial_mutation_step.action {
+        Ok(match initial_mutation_step.action {
             MutationAction::InsertVertex => {
                 let vertex_name = initial_mutation_step.args.get("vertex_name").unwrap();
 
                 let vertex_definition: VertexDefinition =
-                    load_vertex_definition(&self.graph_name, vertex_name)?;
+                    load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
                 println!("Inserting vertex {}", vertex_name);
 
@@ -155,7 +157,8 @@ impl Session {
                         .create_new(true)
                         .write(true)
                         .append(true)
-                        .open(format!("{}/{}", path_to_user, rest_of_id))?;
+                        .open(format!("{}/{}", path_to_user, rest_of_id))
+                        .unwrap();
 
                     let set_vertex_properties: Vec<(&String, &String)> = mutation.steps[1..]
                         .iter()
@@ -200,13 +203,14 @@ impl Session {
                 }
 
                 println!("Inserted vertex {}", vertex_name);
-                Ok(result)
+                result
             }
-            _ => Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Unsupported initial mutation action",
-            )),
-        };
-        result
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "Unsupported initial mutation action",
+                ))
+            }
+        })
     }
 }

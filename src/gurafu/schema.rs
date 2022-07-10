@@ -11,6 +11,7 @@ pub enum SchemaAction {
     CreateGraph,
     CreateVertex,
     CreateVertexProperty,
+    AllowRedefine,
 }
 
 #[derive(Clone)]
@@ -44,6 +45,14 @@ impl SchemaBuilder {
         self.steps.push(SchemaStep {
             action: SchemaAction::CreateVertex,
             args: HashMap::from([("vertex_name".to_owned(), name.to_string())]),
+        });
+        self
+    }
+
+    pub fn allow_redefine(&mut self) -> &mut SchemaBuilder {
+        self.steps.push(SchemaStep {
+            action: SchemaAction::AllowRedefine,
+            args: HashMap::from([]),
         });
         self
     }

@@ -3,9 +3,8 @@ use crate::gurafu::schema::{load_vertex_definition, SchemaAction, VertexDefiniti
 use super::mutation::{MutationAction, MutationResult, MutationStatement};
 use super::schema::SchemaStatement;
 
-use std::fs::{File, OpenOptions};
-use std::io::prelude::*;
-use std::{fs, io};
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, prelude::*, Error, ErrorKind};
 use uuid::Uuid;
 
 pub struct Session {
@@ -41,7 +40,7 @@ impl Session {
 
                 {
                     let path_to_db = format!("gurafu/{}", graph_name);
-                    fs::create_dir_all(&path_to_db).unwrap();
+                    fs::create_dir_all(&path_to_db)?;
                 }
 
                 println!("Graph {} created", graph_name);
@@ -63,12 +62,20 @@ impl Session {
                         "gurafu/{}/vertices/{}/definition",
                         self.graph_name, vertex_name
                     );
-                    let mut definition_file = OpenOptions::new()
-                        // TODO @Shinigami92 2022-07-10: throw error if definition already exists
-                        // .create_new(true)
-                        .create(true)
-                        .write(true)
-                        .open(&path_to_definition_file)?;
+                    let options = match statement.steps[1..]
+                        .iter()
+                        .any(|step| step.action == SchemaAction::AllowRedefine)
+                    {
+                        true => OpenOptions::new().create(true).write(true).to_owned(),
+                        false => OpenOptions::new().create_new(true).write(true).to_owned(),
+                    };
+                    let mut definition_file = match options.open(&path_to_definition_file) {
+                        Ok(file) => file,
+                        Err(_) => return Err(Error::new(
+                            ErrorKind::AlreadyExists,
+                           format!("Vertex for {} definition already exists. Did you miss calling allow_redefine()?", vertex_name),
+                        )),
+                    };
                     let definition = statement.steps[1..]
                         .iter()
                         .filter(|step| step.action == SchemaAction::CreateVertexProperty)

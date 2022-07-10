@@ -1,11 +1,13 @@
 mod gurafu;
 
+use std::io;
+
 use gurafu::client::Client;
 use gurafu::datatype::DataType;
 use gurafu::mutation::MutationBuilder;
 use gurafu::schema::SchemaBuilder;
 
-fn main() -> std::io::Result<()> {
+fn main() -> io::Result<()> {
     // Create a new client
     let client = Client {
         host: String::from("localhost"),
@@ -33,6 +35,7 @@ fn main() -> std::io::Result<()> {
     // Create a new vertex named "user"
     let statement = schema_builder
         .create_vertex("user")
+        .allow_redefine()
         .property("username", DataType::Text)
         .property("password", DataType::Text)
         .property("last_logged_in", DataType::Timestamp)

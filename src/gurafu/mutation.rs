@@ -2,26 +2,20 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum MutationAction {
     InsertVertex,
     SetVertexProperty,
 }
 
+#[derive(Clone)]
 pub struct MutationStep {
     pub action: MutationAction,
     pub args: HashMap<String, String>,
 }
 
-pub struct MutationStatement<'a> {
-    pub steps: &'a [MutationStep],
-}
-
-impl MutationStatement<'_> {
-    pub fn new(steps: &[MutationStep]) -> MutationStatement {
-        // TODO @Shinigami92 2022-07-09: I assume that this is bad practice
-        MutationStatement { steps }
-    }
+pub struct MutationStatement {
+    pub steps: Vec<MutationStep>,
 }
 
 pub struct MutationBuilder {
@@ -52,9 +46,13 @@ impl MutationBuilder {
         self
     }
 
-    pub fn build(&self) -> MutationStatement {
+    pub fn build(&mut self) -> MutationStatement {
         // TODO @Shinigami92 2022-07-09: validate mutation steps
-        MutationStatement::new(&self.steps)
+        let statement = MutationStatement {
+            steps: self.steps.clone(),
+        };
+        self.steps.clear();
+        statement
     }
 }
 

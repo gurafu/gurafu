@@ -47,7 +47,7 @@ impl Session {
 
         let initial_step = &statement.steps[0];
 
-        Ok(match initial_step.action {
+        match initial_step.action {
             SchemaAction::CreateGraph => {
                 let graph_name = initial_step.args.get("graph_name").unwrap();
 
@@ -59,6 +59,7 @@ impl Session {
                 }
 
                 println!("Graph {} created", graph_name);
+                Ok(())
             }
             SchemaAction::CreateVertex => {
                 let vertex_name = initial_step.args.get("vertex_name").unwrap();
@@ -110,14 +111,13 @@ impl Session {
                 }
 
                 println!("Vertex {} created", vertex_name);
+                Ok(())
             }
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Unsupported initial schema action",
-                ))
-            }
-        })
+            _ => Err(Error::new(
+                ErrorKind::Other,
+                "Unsupported initial schema action",
+            )),
+        }
     }
 
     pub fn execute_mutation(&self, mutation: &MutationStatement) -> io::Result<MutationResult> {

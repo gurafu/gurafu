@@ -1,6 +1,6 @@
 use crate::gurafu::schema::{load_vertex_definition, VertexDefinition};
 
-use super::mutation::{Mutation, MutationAction};
+use super::mutation::{Mutation, MutationAction, MutationResult};
 
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
@@ -27,13 +27,12 @@ impl Session {
         self.graph_name = name.to_string();
     }
 
-    pub fn execute_mutation(&self, mutation: &Mutation) -> io::Result<()> {
+    pub fn execute_mutation(&self, mutation: &Mutation) -> io::Result<MutationResult> {
         println!("Executing mutation...");
         let initial_mutation_step = &mutation.steps[0];
 
         let mut vertex_file: File;
-
-        match initial_mutation_step.action {
+        let result: io::Result<MutationResult> = match initial_mutation_step.action {
             MutationAction::InsertVertex => {
                 let vertex_name = initial_mutation_step.args.get("vertex_name").unwrap();
 
@@ -42,10 +41,13 @@ impl Session {
 
                 println!("Inserting vertex {}", vertex_name);
 
-                {
-                    let id = Uuid::new_v4().simple().to_string();
+                let result: MutationResult;
 
-                    let first_two_chars = id[..2].to_string();
+                {
+                    let id = Uuid::new_v4();
+                    let id_simple = id.simple().to_string();
+
+                    let first_two_chars = id_simple[..2].to_string();
                     let path_to_user = format!(
                         "gurafu/{}/vertices/{}/{}",
                         self.graph_name, vertex_name, first_two_chars
@@ -56,7 +58,7 @@ impl Session {
                         Err(err) => return Err(err),
                     };
 
-                    let rest_of_id = id[2..].to_string();
+                    let rest_of_id = id_simple[2..].to_string();
 
                     // TODO @Shinigami92 2022-07-09: check if file already exists
                     // In that case we need to generate a new id
@@ -96,15 +98,27 @@ impl Session {
                         .join("\n");
 
                     let _ = write!(vertex_file, "{}", content);
+
+                    result = MutationResult {
+                        vertex_name: vertex_name.to_string(),
+                        vertex_id: id,
+                        properties: set_vertex_properties
+                            .iter()
+                            .map(|(property_name, property_value)| {
+                                (property_name.to_string(), property_value.to_string())
+                            })
+                            .collect(),
+                    };
                 }
 
                 println!("Inserted vertex {}", vertex_name);
+                Ok(result)
             }
-            _ => {
-                // TODO @Shinigami92 2022-07-09: throw a real error
-                println!("Unsupported initial mutation action");
-            }
-        }
-        Ok(())
+            _ => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Unsupported initial mutation action",
+            )),
+        };
+        result
     }
 }

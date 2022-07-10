@@ -38,7 +38,9 @@ fn main() -> std::io::Result<()> {
         .property("created_at", "2022-07-09T08:47:45.409Z")
         .build();
 
-    session.execute_mutation(&mutation)?;
+    let result = session.execute_mutation(&mutation)?;
+
+    println!("Generated id of vertex was {}", result.vertex_id);
 
     Ok(())
 }

@@ -30,7 +30,7 @@ fn main() -> io::Result<()> {
     session.execute_schema(&statement)?;
 
     // Use the newly created graph
-    session.use_graph("my_test_db");
+    session.use_graph("my_test_db")?;
 
     // Create a new vertex named "user"
     let statement = schema_builder

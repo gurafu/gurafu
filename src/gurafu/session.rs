@@ -5,6 +5,7 @@ use super::schema::SchemaStatement;
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, prelude::*, Error, ErrorKind};
+use std::path::Path;
 use uuid::Uuid;
 
 pub struct Session {
@@ -22,9 +23,20 @@ impl Session {
         println!("Connecting to database...");
     }
 
-    pub fn use_graph(&mut self, name: &str) {
+    pub fn use_graph(&mut self, name: &str) -> io::Result<()> {
         println!("Using graph {}", name);
+
+        let path = format!("gurafu/{}", name);
+        if !Path::new(&path).exists() {
+            return Err(Error::new(
+                ErrorKind::NotFound,
+                format!("Graph {} does not exist.", name),
+            ));
+        }
+
         self.graph_name = name.to_string();
+
+        Ok(())
     }
 
     pub fn execute_schema(&self, statement: &SchemaStatement) -> io::Result<()> {

@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Error, ErrorKind, Write},
-    path::Path,
+    path::PathBuf,
 };
 
 use uuid::Uuid;
@@ -29,7 +29,7 @@ impl Session {
     pub fn use_graph(&mut self, name: &str) -> io::Result<()> {
         println!("Using graph {}", name);
 
-        let path = Path::new("gurafu").join(name);
+        let path = PathBuf::from_iter(["gurafu", name]);
         if !path.exists() {
             return Err(Error::new(
                 ErrorKind::NotFound,
@@ -54,7 +54,7 @@ impl Session {
                 println!("Creating graph {}", graph_name);
 
                 {
-                    let path_to_db = Path::new("gurafu").join(graph_name);
+                    let path_to_db = PathBuf::from_iter(["gurafu", graph_name]);
                     fs::create_dir_all(&path_to_db).unwrap();
                 }
 
@@ -68,10 +68,8 @@ impl Session {
 
                 {
                     // Create vertex directory
-                    let path_to_vertex = Path::new("gurafu")
-                        .join(&self.graph_name)
-                        .join("vertices")
-                        .join(vertex_name);
+                    let path_to_vertex =
+                        PathBuf::from_iter(["gurafu", &self.graph_name, "vertices", vertex_name]);
 
                     fs::create_dir_all(&path_to_vertex).unwrap();
 
@@ -140,12 +138,14 @@ impl Session {
                     let id = Uuid::new_v4();
                     let id_simple = id.simple().to_string();
 
-                    let first_two_chars = id_simple[..2].to_string();
-                    let path_to_vertex = Path::new("gurafu")
-                        .join(&self.graph_name)
-                        .join("vertices")
-                        .join(vertex_name)
-                        .join(first_two_chars);
+                    let first_two_chars = &id_simple[..2];
+                    let path_to_vertex = PathBuf::from_iter([
+                        "gurafu",
+                        &self.graph_name,
+                        "vertices",
+                        vertex_name,
+                        first_two_chars,
+                    ]);
 
                     match fs::create_dir_all(&path_to_vertex) {
                         Ok(it) => it,

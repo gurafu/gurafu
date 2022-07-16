@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::gurafu::datatype::DataType;
 
-use super::{SchemaAction, SchemaStatement, SchemaStep};
+use super::{SchemaStatement, SchemaStep};
 
 pub struct SchemaBuilder {
     steps: Vec<SchemaStep>,
@@ -14,37 +12,25 @@ impl SchemaBuilder {
     }
 
     pub fn create_graph(&mut self, name: &str) -> &mut SchemaBuilder {
-        self.steps.push(SchemaStep {
-            action: SchemaAction::CreateGraph,
-            args: HashMap::from([("graph_name".to_owned(), name.to_string())]),
-        });
+        self.steps.push(SchemaStep::CreateGraph(name.to_string()));
         self
     }
 
     pub fn create_vertex(&mut self, name: &str) -> &mut SchemaBuilder {
-        self.steps.push(SchemaStep {
-            action: SchemaAction::CreateVertex,
-            args: HashMap::from([("vertex_name".to_owned(), name.to_string())]),
-        });
+        self.steps.push(SchemaStep::CreateVertex(name.to_string()));
         self
     }
 
     pub fn allow_redefine(&mut self) -> &mut SchemaBuilder {
-        self.steps.push(SchemaStep {
-            action: SchemaAction::AllowRedefine,
-            args: HashMap::from([]),
-        });
+        self.steps.push(SchemaStep::AllowRedefine);
         self
     }
 
     pub fn property(&mut self, name: &str, datatype: DataType) -> &mut SchemaBuilder {
-        self.steps.push(SchemaStep {
-            action: SchemaAction::CreateVertexProperty,
-            args: HashMap::from([
-                ("property_name".to_owned(), name.to_string()),
-                ("property_datatype".to_owned(), datatype.to_string()),
-            ]),
-        });
+        self.steps.push(SchemaStep::CreateVertexProperty(
+            name.to_string(),
+            datatype.to_string(),
+        ));
         self
     }
 

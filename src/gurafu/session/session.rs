@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::gurafu::{
     mutation::{MutationAction, MutationResult, MutationStatement},
-    schema::{load_vertex_definition, SchemaAction, SchemaStatement, VertexDefinition},
+    schema::{load_vertex_definition, SchemaStatement, SchemaStep, VertexDefinition},
 };
 
 pub struct Session {
@@ -49,10 +49,8 @@ impl Session {
 
         let initial_step = &statement.steps[0];
 
-        match initial_step.action {
-            SchemaAction::CreateGraph => {
-                let graph_name = initial_step.args.get("graph_name").unwrap();
-
+        match initial_step {
+            SchemaStep::CreateGraph(graph_name) => {
                 println!("Creating graph {}", graph_name);
 
                 {
@@ -63,9 +61,7 @@ impl Session {
                 println!("Graph {} created", graph_name);
                 Ok(())
             }
-            SchemaAction::CreateVertex => {
-                let vertex_name = initial_step.args.get("vertex_name").unwrap();
-
+            SchemaStep::CreateVertex(vertex_name) => {
                 println!("Creating vertex {}", vertex_name);
 
                 {
@@ -80,7 +76,7 @@ impl Session {
 
                     let options = match statement.steps[1..]
                         .iter()
-                        .any(|step| step.action == SchemaAction::AllowRedefine)
+                        .any(|step| step == &SchemaStep::AllowRedefine)
                     {
                         true => OpenOptions::new().create(true).write(true).to_owned(),
                         false => OpenOptions::new().create_new(true).write(true).to_owned(),
@@ -94,20 +90,16 @@ impl Session {
                             ));
                         }
                     };
-                    let definition = statement.steps[1..]
-                        .iter()
-                        .filter(|step| step.action == SchemaAction::CreateVertexProperty)
-                        .fold(String::new(), |acc, step| {
-                            format!(
-                                "{}{},{}\n",
-                                acc,
-                                step.args.get("property_name").unwrap(),
-                                step.args.get("property_datatype").unwrap()
-                            )
-                        })
-                        .trim_end()
-                        .to_owned();
-                    definition_file.write_all(definition.as_bytes()).unwrap();
+                    let mut definition_content = String::new();
+                    for step in statement.steps[1..].iter() {
+                        if let SchemaStep::CreateVertexProperty(property_name, datatype) = step {
+                            writeln!(definition_content, "{},{}", property_name, datatype).unwrap();
+                        }
+                    }
+                    definition_content = definition_content.trim_end().to_string();
+                    definition_file
+                        .write_all(definition_content.as_bytes())
+                        .unwrap();
                 }
 
                 println!("Vertex {} created", vertex_name);

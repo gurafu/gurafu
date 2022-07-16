@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use super::{MutationAction, MutationStatement, MutationStep};
+use super::{MutationStatement, MutationStep};
 
 pub struct MutationBuilder {
     steps: Vec<MutationStep>,
@@ -12,21 +10,16 @@ impl MutationBuilder {
     }
 
     pub fn insert_vertex(&mut self, name: &str) -> &mut MutationBuilder {
-        self.steps.push(MutationStep {
-            action: MutationAction::InsertVertex,
-            args: HashMap::from([("vertex_name".to_owned(), name.to_string())]),
-        });
+        self.steps
+            .push(MutationStep::InsertVertex(name.to_string()));
         self
     }
 
     pub fn property(&mut self, name: &str, value: &str) -> &mut MutationBuilder {
-        self.steps.push(MutationStep {
-            action: MutationAction::SetVertexProperty,
-            args: HashMap::from([
-                ("property_name".to_owned(), name.to_string()),
-                ("property_value".to_owned(), value.to_string()),
-            ]),
-        });
+        self.steps.push(MutationStep::SetVertexProperty(
+            name.to_string(),
+            value.to_string(),
+        ));
         self
     }
 

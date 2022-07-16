@@ -9,7 +9,7 @@ use std::{
 use uuid::Uuid;
 
 use crate::gurafu::{
-    mutation::{MutationAction, MutationResult, MutationStatement},
+    mutation::{MutationResult, MutationStatement, MutationStep},
     schema::{load_vertex_definition, SchemaStatement, SchemaStep, VertexDefinition},
 };
 
@@ -117,10 +117,8 @@ impl Session {
         let initial_mutation_step = &mutation.steps[0];
 
         let mut vertex_file: File;
-        Ok(match initial_mutation_step.action {
-            MutationAction::InsertVertex => {
-                let vertex_name = initial_mutation_step.args.get("vertex_name").unwrap();
-
+        Ok(match initial_mutation_step {
+            MutationStep::InsertVertex(vertex_name) => {
                 let vertex_definition: VertexDefinition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
@@ -159,15 +157,13 @@ impl Session {
                         .unwrap();
 
                     let mut set_vertex_properties: HashMap<String, String> = HashMap::new();
-                    mutation.steps[1..]
-                        .iter()
-                        .filter(|step| step.action == MutationAction::SetVertexProperty)
-                        .for_each(|step| {
-                            set_vertex_properties.insert(
-                                step.args.get("property_name").unwrap().to_string(),
-                                step.args.get("property_value").unwrap().to_string(),
-                            );
-                        });
+
+                    for step in mutation.steps.iter() {
+                        if let MutationStep::SetVertexProperty(property_name, value) = step {
+                            set_vertex_properties
+                                .insert(property_name.to_string(), value.to_string());
+                        }
+                    }
 
                     let mut content = String::new();
                     for property_definition in &vertex_definition.property_definitions {

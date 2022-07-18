@@ -5,7 +5,7 @@ use std::io;
 use crate::gurafu::client::Client;
 use crate::gurafu::datatype::DataType;
 use crate::gurafu::mutation::MutationBuilder;
-use crate::gurafu::query::QueryBuilder;
+use crate::gurafu::query::{QueryBuilder, QueryResultProperty};
 use crate::gurafu::schema::SchemaBuilder;
 
 fn main() -> io::Result<()> {
@@ -75,14 +75,21 @@ fn main() -> io::Result<()> {
 
     assert_eq!(result2.vertex_id, result.vertex_id);
 
-    println!(
-        "Queried result {} was {} and has datatype {}",
-        result2.properties.get(0).unwrap().name,
-        result2.properties.get(0).unwrap().value,
-        result2.properties.get(0).unwrap().datatype
-    );
-    // assert_eq!(result2.properties.get("id").unwrap(), result.vertex_id);
-    // assert_eq!(result2.properties.get("username"), "Shinigami");
+    for property in result2.properties {
+        match property {
+            QueryResultProperty {
+                name,
+                value,
+                datatype,
+            } if datatype == DataType::Text => {
+                println!(
+                    "Queried result {} was {} and has datatype {}",
+                    name, value, datatype
+                );
+            }
+            _ => {}
+        }
+    }
 
     Ok(())
 }

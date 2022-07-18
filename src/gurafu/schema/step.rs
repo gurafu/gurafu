@@ -1,3 +1,5 @@
+use crate::gurafu::datatype::DataType;
+
 #[derive(Clone, PartialEq)]
 pub enum SchemaStep {
     /// * `name` - The name of the graph.
@@ -6,6 +8,6 @@ pub enum SchemaStep {
     CreateVertex(String),
     /// * `name` - The name of the property.
     /// * `datatype` - The data type of the property.
-    CreateVertexProperty(String, String),
+    CreateVertexProperty(String, DataType),
     AllowRedefine,
 }

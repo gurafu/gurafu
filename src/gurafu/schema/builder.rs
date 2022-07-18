@@ -27,10 +27,8 @@ impl SchemaBuilder {
     }
 
     pub fn property(&mut self, name: &str, datatype: DataType) -> &mut SchemaBuilder {
-        self.steps.push(SchemaStep::CreateVertexProperty(
-            name.to_string(),
-            datatype.to_string(),
-        ));
+        self.steps
+            .push(SchemaStep::CreateVertexProperty(name.to_string(), datatype));
         self
     }
 

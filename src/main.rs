@@ -74,6 +74,13 @@ fn main() -> io::Result<()> {
     let result2 = session.execute_query(&query).unwrap();
 
     assert_eq!(result2.vertex_id, result.vertex_id);
+
+    println!(
+        "Queried result {} was {} and has datatype {}",
+        result2.properties.get(0).unwrap().name,
+        result2.properties.get(0).unwrap().value,
+        result2.properties.get(0).unwrap().datatype
+    );
     // assert_eq!(result2.properties.get("id").unwrap(), result.vertex_id);
     // assert_eq!(result2.properties.get("username"), "Shinigami");
 

@@ -1,11 +1,9 @@
 mod builder;
+mod definition;
 mod statement;
 mod step;
-mod vertex_definition;
-mod vertex_property_definition;
 
 pub use builder::*;
+pub use definition::*;
 pub use statement::*;
 pub use step::*;
-pub use vertex_definition::*;
-pub use vertex_property_definition::*;

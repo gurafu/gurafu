@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fmt::{Display, Write as FmtWrite},
+    fmt::Write as FmtWrite,
     fs::{self, File, OpenOptions},
     io::{self, Error, ErrorKind, Read, Write as IoWrite},
     path::PathBuf,
@@ -10,8 +10,8 @@ use uuid::Uuid;
 
 use crate::gurafu::{
     mutation::{MutationResult, MutationStatement, MutationStep},
-    query::{QueryResult, QueryStatement, QueryStep},
-    schema::{load_vertex_definition, SchemaStatement, SchemaStep, VertexDefinition},
+    query::{QueryResult, QueryResultProperty, QueryStatement, QueryStep},
+    schema::{load_vertex_definition, SchemaStatement, SchemaStep},
 };
 
 pub struct Session {
@@ -120,7 +120,7 @@ impl Session {
         let mut vertex_file: File;
         Ok(match initial_mutation_step {
             MutationStep::InsertVertex(vertex_name) => {
-                let vertex_definition: VertexDefinition =
+                let vertex_definition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
                 println!("Inserting vertex {}", vertex_name);
@@ -167,7 +167,8 @@ impl Session {
                     }
 
                     let mut content = String::new();
-                    for property_definition in &vertex_definition.property_definitions {
+
+                    for property_definition in vertex_definition.property_definitions {
                         if let Some(property_value) =
                             set_vertex_properties.get(&property_definition.name)
                         {
@@ -211,7 +212,7 @@ impl Session {
         let mut vertex_file: File;
         Ok(match initial_query_step {
             QueryStep::FindVertex(vertex_name) => {
-                let vertex_definition: VertexDefinition =
+                let vertex_definition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
                 println!("Find vertex {}", vertex_name);
@@ -244,21 +245,22 @@ impl Session {
 
                         let lines = content.lines();
 
+                        let mut properties: Vec<QueryResultProperty> = Vec::new();
+
+                        for (index, property_definition) in
+                            vertex_definition.property_definitions.iter().enumerate()
+                        {
+                            properties.push(QueryResultProperty {
+                                name: property_definition.name.to_string(),
+                                value: lines.clone().nth(index).unwrap().to_string(),
+                                datatype: property_definition.datatype,
+                            });
+                        }
+
                         result = QueryResult {
                             vertex_name: vertex_name.to_string(),
                             vertex_id: id,
-                            properties: vertex_definition
-                                .property_definitions
-                                .iter()
-                                .map(|property_definition| {
-                                    let property_value = lines
-                                        .find(|line| line.contains(&property_definition.name))
-                                        .unwrap()
-                                        .to_string()
-                                        .clone();
-                                    (property_definition.name.clone(), Box::new(property_value))
-                                })
-                                .collect::<HashMap<&str, Box<dyn Display + 'static>>>(),
+                            properties,
                         }
                     }
                     _ => {

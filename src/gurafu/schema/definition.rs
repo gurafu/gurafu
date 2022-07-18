@@ -7,11 +7,14 @@ use std::{
 
 use crate::gurafu::datatype::DataType;
 
-use super::VertexPropertyDefinition;
-
 pub struct VertexDefinition {
     pub name: String,
     pub property_definitions: Vec<VertexPropertyDefinition>,
+}
+
+pub struct VertexPropertyDefinition {
+    pub name: String,
+    pub datatype: DataType,
 }
 
 pub fn load_vertex_definition(graph_name: &str, vertex_name: &str) -> io::Result<VertexDefinition> {

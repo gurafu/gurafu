@@ -1,9 +1,15 @@
-use std::{collections::HashMap, fmt::Display};
-
 use uuid::Uuid;
 
-pub struct QueryResult<'a> {
+use crate::gurafu::datatype::DataType;
+
+pub struct QueryResultProperty {
+    pub name: String,
+    pub value: String,
+    pub datatype: DataType,
+}
+
+pub struct QueryResult {
     pub vertex_name: String,
     pub vertex_id: Uuid,
-    pub properties: HashMap<&'a str, Box<dyn Display + 'static>>,
+    pub properties: Vec<QueryResultProperty>,
 }

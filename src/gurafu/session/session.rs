@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fmt::Write as FmtWrite,
     fs::{self, File, OpenOptions},
-    io::{self, Error, ErrorKind, Write as IoWrite},
+    io::{self, Error, ErrorKind, Read, Write as IoWrite},
     path::PathBuf,
 };
 
@@ -10,7 +10,8 @@ use uuid::Uuid;
 
 use crate::gurafu::{
     mutation::{MutationResult, MutationStatement, MutationStep},
-    schema::{load_vertex_definition, SchemaStatement, SchemaStep, VertexDefinition},
+    query::{QueryResult, QueryResultProperty, QueryStatement, QueryStep},
+    schema::{load_vertex_definition, SchemaStatement, SchemaStep},
 };
 
 pub struct Session {
@@ -119,7 +120,7 @@ impl Session {
         let mut vertex_file: File;
         Ok(match initial_mutation_step {
             MutationStep::InsertVertex(vertex_name) => {
-                let vertex_definition: VertexDefinition =
+                let vertex_definition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
                 println!("Inserting vertex {}", vertex_name);
@@ -166,7 +167,8 @@ impl Session {
                     }
 
                     let mut content = String::new();
-                    for property_definition in &vertex_definition.property_definitions {
+
+                    for property_definition in vertex_definition.property_definitions {
                         if let Some(property_value) =
                             set_vertex_properties.get(&property_definition.name)
                         {
@@ -198,6 +200,84 @@ impl Session {
                 return Err(Error::new(
                     ErrorKind::Other,
                     "Unsupported initial mutation action",
+                ))
+            }
+        })
+    }
+
+    pub fn execute_query(&self, query: &QueryStatement) -> io::Result<QueryResult> {
+        println!("Executing query statement...");
+        let initial_query_step = &query.steps[0];
+
+        let mut vertex_file: File;
+        Ok(match initial_query_step {
+            QueryStep::FindVertex(vertex_name) => {
+                let vertex_definition =
+                    load_vertex_definition(&self.graph_name, vertex_name).unwrap();
+
+                println!("Find vertex {}", vertex_name);
+
+                let result;
+
+                match query.steps[1] {
+                    QueryStep::WithId(id) => {
+                        let id_simple = id.simple().to_string();
+
+                        let first_two_chars = &id_simple[..2];
+                        let path_to_vertex = PathBuf::from_iter([
+                            "gurafu",
+                            &self.graph_name,
+                            "vertices",
+                            vertex_name,
+                            first_two_chars,
+                        ]);
+
+                        let rest_of_id = id_simple[2..].to_string();
+
+                        vertex_file = OpenOptions::new()
+                            .read(true)
+                            .open(path_to_vertex.join(rest_of_id))
+                            .unwrap();
+
+                        let mut content = String::new();
+
+                        vertex_file.read_to_string(&mut content).unwrap();
+
+                        let lines = content.lines();
+
+                        let mut properties: Vec<QueryResultProperty> = Vec::new();
+
+                        for (index, property_definition) in
+                            vertex_definition.property_definitions.iter().enumerate()
+                        {
+                            properties.push(QueryResultProperty {
+                                name: property_definition.name.to_string(),
+                                value: lines.clone().nth(index).unwrap().to_string(),
+                                datatype: property_definition.datatype,
+                            });
+                        }
+
+                        result = QueryResult {
+                            vertex_name: vertex_name.to_string(),
+                            vertex_id: id,
+                            properties,
+                        }
+                    }
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::Other,
+                            "Unsupported second query step",
+                        ))
+                    }
+                }
+
+                println!("Found vertex {}", vertex_name);
+                result
+            }
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "Unsupported initial query step",
                 ))
             }
         })

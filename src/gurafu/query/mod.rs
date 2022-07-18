@@ -1,9 +1,9 @@
 mod builder;
-mod definition;
+mod result;
 mod statement;
 mod step;
 
 pub use builder::*;
-pub use definition::*;
+pub use result::*;
 pub use statement::*;
 pub use step::*;

@@ -5,6 +5,7 @@ use std::io;
 use crate::gurafu::client::Client;
 use crate::gurafu::datatype::DataType;
 use crate::gurafu::mutation::MutationBuilder;
+use crate::gurafu::query::{QueryBuilder, QueryResultProperty};
 use crate::gurafu::schema::SchemaBuilder;
 
 fn main() -> io::Result<()> {
@@ -61,6 +62,34 @@ fn main() -> io::Result<()> {
     let result = session.execute_mutation(&mutation).unwrap();
 
     println!("Generated id of vertex was {}", result.vertex_id);
+
+    // Query the user vertex
+    let mut query_builder = QueryBuilder::new();
+
+    let query = query_builder
+        .find_vertex("user".to_string())
+        .with_id(result.vertex_id)
+        .build();
+
+    let result2 = session.execute_query(&query).unwrap();
+
+    assert_eq!(result2.vertex_id, result.vertex_id);
+
+    for property in result2.properties {
+        match property {
+            QueryResultProperty {
+                name,
+                value,
+                datatype,
+            } if datatype == DataType::Text => {
+                println!(
+                    "Queried result {} was {} and has datatype {}",
+                    name, value, datatype
+                );
+            }
+            _ => {}
+        }
+    }
 
     Ok(())
 }

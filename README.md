@@ -34,3 +34,4 @@ But I also want to try to create a real project. So I thought I might try to cre
 - [ ] Drop schema vertex property
 - [ ] Rename schema vertex property
 - [ ] Add more datatypes
+- [x] Replace all println with logging

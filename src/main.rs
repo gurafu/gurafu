@@ -2,6 +2,9 @@ mod gurafu;
 
 use std::io;
 
+use env_logger::Target;
+use log::{info, LevelFilter};
+
 use crate::gurafu::client::Client;
 use crate::gurafu::datatype::DataType;
 use crate::gurafu::mutation::MutationBuilder;
@@ -9,6 +12,11 @@ use crate::gurafu::query::{QueryBuilder, QueryResultProperty};
 use crate::gurafu::schema::SchemaBuilder;
 
 fn main() -> io::Result<()> {
+    env_logger::Builder::from_default_env()
+        .filter_level(LevelFilter::Debug)
+        .target(Target::Stdout)
+        .init();
+
     // Create a new client
     let client = Client {
         host: String::from("localhost"),
@@ -61,7 +69,7 @@ fn main() -> io::Result<()> {
 
     let result = session.execute_mutation(&mutation).unwrap();
 
-    println!("Generated id of vertex was {}", result.vertex_id);
+    info!("Generated id of vertex was {}", result.vertex_id);
 
     // Query the user vertex
     let mut query_builder = QueryBuilder::new();
@@ -82,7 +90,7 @@ fn main() -> io::Result<()> {
                 value,
                 datatype,
             } if datatype == DataType::Text => {
-                println!(
+                info!(
                     "Queried result {} was {} and has datatype {}",
                     name, value, datatype
                 );

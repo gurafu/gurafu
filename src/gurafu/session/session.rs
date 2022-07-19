@@ -6,6 +6,7 @@ use std::{
     path::PathBuf,
 };
 
+use log::debug;
 use uuid::Uuid;
 
 use crate::gurafu::{
@@ -26,11 +27,11 @@ impl Session {
     }
 
     pub fn connect(&self) {
-        println!("Connecting to database...");
+        debug!("Connecting to database...");
     }
 
     pub fn use_graph(&mut self, name: &str) -> io::Result<()> {
-        println!("Using graph {}", name);
+        debug!("Using graph {}", name);
 
         let path = PathBuf::from_iter(["gurafu", name]);
         if !path.exists() {
@@ -46,24 +47,24 @@ impl Session {
     }
 
     pub fn execute_schema(&self, statement: &SchemaStatement) -> io::Result<()> {
-        println!("Executing schema statement...");
+        debug!("Executing schema statement...");
 
         let initial_step = &statement.steps[0];
 
         match initial_step {
             SchemaStep::CreateGraph(graph_name) => {
-                println!("Creating graph {}", graph_name);
+                debug!("Creating graph {}", graph_name);
 
                 {
                     let path_to_db = PathBuf::from_iter(["gurafu", graph_name]);
                     fs::create_dir_all(&path_to_db).unwrap();
                 }
 
-                println!("Graph {} created", graph_name);
+                debug!("Graph {} created", graph_name);
                 Ok(())
             }
             SchemaStep::CreateVertex(vertex_name) => {
-                println!("Creating vertex {}", vertex_name);
+                debug!("Creating vertex {}", vertex_name);
 
                 {
                     // Create vertex directory
@@ -103,7 +104,7 @@ impl Session {
                         .unwrap();
                 }
 
-                println!("Vertex {} created", vertex_name);
+                debug!("Vertex {} created", vertex_name);
                 Ok(())
             }
             _ => Err(Error::new(
@@ -114,7 +115,7 @@ impl Session {
     }
 
     pub fn execute_mutation(&self, mutation: &MutationStatement) -> io::Result<MutationResult> {
-        println!("Executing mutation statement...");
+        debug!("Executing mutation statement...");
         let initial_mutation_step = &mutation.steps[0];
 
         let mut vertex_file: File;
@@ -123,7 +124,7 @@ impl Session {
                 let vertex_definition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
-                println!("Inserting vertex {}", vertex_name);
+                debug!("Inserting vertex {}", vertex_name);
 
                 let result: MutationResult;
 
@@ -193,7 +194,7 @@ impl Session {
                     };
                 }
 
-                println!("Inserted vertex {}", vertex_name);
+                debug!("Inserted vertex {}", vertex_name);
                 result
             }
             _ => {
@@ -206,7 +207,7 @@ impl Session {
     }
 
     pub fn execute_query(&self, query: &QueryStatement) -> io::Result<QueryResult> {
-        println!("Executing query statement...");
+        debug!("Executing query statement...");
         let initial_query_step = &query.steps[0];
 
         let mut vertex_file: File;
@@ -215,7 +216,7 @@ impl Session {
                 let vertex_definition =
                     load_vertex_definition(&self.graph_name, vertex_name).unwrap();
 
-                println!("Find vertex {}", vertex_name);
+                debug!("Find vertex {}", vertex_name);
 
                 let result;
 
@@ -271,7 +272,7 @@ impl Session {
                     }
                 }
 
-                println!("Found vertex {}", vertex_name);
+                debug!("Found vertex {}", vertex_name);
                 result
             }
             _ => {

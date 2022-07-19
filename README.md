@@ -25,7 +25,12 @@ But I also want to try to create a real project. So I thought I might try to cre
 - [ ] Definable default value
 - [ ] Send steps via session / client over network
 - [ ] Add indexing for vertices
-- [ ] Add indexing for edged
+- [ ] Add indexing for edges
 - [ ] Add transactions
 - [ ] Add views
 - [ ] Add materialized views
+- [ ] Drop schema vertex
+- [ ] Drop schema edge
+- [ ] Drop schema vertex property
+- [ ] Rename schema vertex property
+- [ ] Add more datatypes

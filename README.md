@@ -9,7 +9,7 @@ But I also want to try to create a real project. So I thought I might try to cre
 - [ ] Validate steps before running them
 - [ ] Regenerate a new UUID on collision
 - [ ] Check the datatype before writing to disk
-- [ ] Delete a vertex
+- [x] Delete a vertex
 - [ ] Define an edge schema
 - [ ] Add an edge
 - [ ] Delete an edge

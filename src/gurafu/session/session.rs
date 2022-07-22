@@ -118,7 +118,6 @@ impl Session {
         debug!("Executing mutation statement...");
         let initial_mutation_step = &mutation.steps[0];
 
-        let mut vertex_file: File;
         Ok(match initial_mutation_step {
             MutationStep::InsertVertex(vertex_name) => {
                 let vertex_definition =
@@ -151,7 +150,7 @@ impl Session {
                     // TODO @Shinigami92 2022-07-09: check if file already exists
                     // In that case we need to generate a new id
 
-                    vertex_file = OpenOptions::new()
+                    let mut vertex_file = OpenOptions::new()
                         .create_new(true)
                         .write(true)
                         .append(true)
@@ -195,6 +194,41 @@ impl Session {
                 }
 
                 debug!("Inserted vertex {}", vertex_name);
+                result
+            }
+            MutationStep::DropVertex(vertex_name, id) => {
+                debug!("Dropping vertex {} with id {}", vertex_name, id);
+
+                let result: MutationResult;
+
+                {
+                    let id_simple = id.simple().to_string();
+
+                    let first_two_chars = &id_simple[..2];
+                    let path_to_vertex = PathBuf::from_iter([
+                        "gurafu",
+                        &self.graph_name,
+                        "vertices",
+                        vertex_name,
+                        first_two_chars,
+                    ]);
+
+                    let rest_of_id = id_simple[2..].to_string();
+                    let path_to_vertex_file = path_to_vertex.join(rest_of_id);
+
+                    match fs::remove_file(&path_to_vertex_file) {
+                        Ok(it) => it,
+                        Err(err) => return Err(err),
+                    };
+
+                    result = MutationResult {
+                        vertex_name: vertex_name.to_string(),
+                        vertex_id: id.to_owned(),
+                        properties: HashMap::new(),
+                    }
+                }
+
+                debug!("Dropped vertex {} with id {}", vertex_name, id);
                 result
             }
             _ => {

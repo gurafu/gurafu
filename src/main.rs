@@ -99,5 +99,12 @@ fn main() -> io::Result<()> {
         }
     }
 
+    // Drop the user vertex
+    let mutation = mutation_builder
+        .drop_vertex("user", result.vertex_id)
+        .build();
+
+    session.execute_mutation(&mutation).unwrap();
+
     Ok(())
 }

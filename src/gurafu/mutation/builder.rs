@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::{MutationStatement, MutationStep};
 
 pub struct MutationBuilder {
@@ -20,6 +22,12 @@ impl MutationBuilder {
             name.to_string(),
             value.to_string(),
         ));
+        self
+    }
+
+    pub fn drop_vertex(&mut self, name: &str, id: Uuid) -> &mut MutationBuilder {
+        self.steps
+            .push(MutationStep::DropVertex(name.to_string(), id));
         self
     }
 
